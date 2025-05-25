@@ -100,7 +100,7 @@ async def async_setup_platform(
             return
 
     try:
-        async with aiofiles.open(device_json_path, mode='r') as j:
+        async with aiofiles.open(device_json_path, mode="r") as j:
             _LOGGER.debug(f"loading json file {device_json_path}")
             content = await j.read()
             device_data = json.loads(content)
