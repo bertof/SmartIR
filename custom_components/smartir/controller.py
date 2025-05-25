@@ -15,6 +15,7 @@ XIAOMI_CONTROLLER = "Xiaomi"
 MQTT_CONTROLLER = "MQTT"
 LOOKIN_CONTROLLER = "LOOKin"
 ESPHOME_CONTROLLER = "ESPHome"
+ZHA_CONTROLLER = "ZHA"
 
 ENC_BASE64 = "Base64"
 ENC_HEX = "Hex"
@@ -26,6 +27,7 @@ XIAOMI_COMMANDS_ENCODING = [ENC_PRONTO, ENC_RAW]
 MQTT_COMMANDS_ENCODING = [ENC_RAW]
 LOOKIN_COMMANDS_ENCODING = [ENC_PRONTO, ENC_RAW]
 ESPHOME_COMMANDS_ENCODING = [ENC_RAW]
+ZHA_COMMANDS_ENCODING = [ENC_BASE64, ENC_RAW]
 
 
 def get_controller(hass, controller, encoding, controller_data, delay):
@@ -36,6 +38,7 @@ def get_controller(hass, controller, encoding, controller_data, delay):
         MQTT_CONTROLLER: MQTTController,
         LOOKIN_CONTROLLER: LookinController,
         ESPHOME_CONTROLLER: ESPHomeController,
+        ZHA_CONTROLLER: ZHAController,
     }
     try:
         return controllers[controller](
@@ -127,6 +130,41 @@ class XiaomiController(AbstractController):
         }
 
         await self.hass.services.async_call("remote", "send_command", service_data)
+
+
+class ZHAController(AbstractController):
+    """Controls a ZHA device."""
+
+    def check_encoding(self, enconding):
+        """Check if the encoding is supported by the controller."""
+        if enconding not in ZHA_COMMANDS_ENCODING:
+            raise Exception(
+                f"The encoding {enconding} is not supported by the ZHA controller"
+            )
+
+    async def send(self, command):
+        """Send a command."""
+
+        if self._encoding == ENC_RAW:
+            pass
+        # if self._encoding == ENC_BASE64:
+        #     try:
+        #         _command = b64decode(_command)
+        # TODO: convert b64 data, so we can reuse all other remotes configs
+
+        service_data = {
+            "cluster_type": "in",
+            "endpoint_id": "1",
+            "command": "2",
+            "ieee": self._controller_data,
+            "command_type": "server",
+            "params": {"code": command},
+            "cluster_id": "57348",
+        }
+
+        await self.hass.services.async_call(
+            "zha", "issue_zigbee_cluster_command", service_data
+        )
 
 
 class MQTTController(AbstractController):
